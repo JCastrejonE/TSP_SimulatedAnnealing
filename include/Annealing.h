@@ -7,10 +7,10 @@
 #include "Graph.h"
 
 #define BATCH_SIZE 1000
-#define MAX_BATCH_ATTEMPTS BATCH_SIZE * BATCH_SIZE
-#define EPSILON 0.001
-#define EPSILONP 0.000001
-#define PHI 0.9
+#define MAX_BATCH_ATTEMPTS BATCH_SIZE * 100
+#define EPSILON 0.05
+#define EPSILONP 0.001
+#define PHI 0.95
 
 using namespace std;
 
@@ -46,7 +46,7 @@ public:
   static double initialTemperature(double, double);
   static void thresholdAccepting(double);
   static void createInitialSolution(vector<int>);
-  static vector<int> neighbour(vector<int>);
+  static pair<vector<int>, double> neighbour(double);
 };
 
 template <int n>
@@ -176,12 +176,15 @@ double Annealing<n>::computeBatch(double T)
   double r = 0.0;
   while (c < BATCH_SIZE)
   {
-    vector<int> sp = Annealing<n>::neighbour(Annealing<n>::s);
-    if (Annealing<n>::costFunction(sp) < Annealing<n>::costFunction(Annealing<n>::s) + T)
+    double sCost = Annealing<n>::costFunction(Annealing<n>::s);
+    pair<vector<int>, double> neighbour = Annealing<n>::neighbour(sCost);
+    vector<int> sp = neighbour.first;
+    double spCost = neighbour.second;
+    if (spCost < sCost + T)
     {
       Annealing<n>::s = sp;
       c += 1;
-      r += Annealing<n>::costFunction(sp);
+      r += spCost;
     }
     i += 1;
     if (i >= MAX_BATCH_ATTEMPTS)
@@ -207,7 +210,7 @@ void Annealing<n>::thresholdAccepting(double T)
     T = PHI * T;
   }
   for(auto i: Annealing<n>::s) {
-    printf("%d,", i);
+    printf("%d,", i+1);
   }
   printf("\n");
 }
@@ -252,8 +255,11 @@ double Annealing<n>::acceptedPercentage(double T)
   int tries = 0;
   for (int i = 0; i < BATCH_SIZE; i++)
   {
-    vector<int> sp = Annealing<n>::neighbour(Annealing<n>::s);
-    if (Annealing<n>::costFunction(sp) <= Annealing<n>::costFunction(Annealing<n>::s) + T)
+    double sCost = Annealing<n>::costFunction(Annealing<n>::s);
+    pair<vector<int>, double> neighbour = Annealing<n>::neighbour(sCost);
+    vector<int> sp = neighbour.first;
+    double spCost = neighbour.second;
+    if (spCost <= sCost + T)
     {
       c += 1;
       Annealing<n>::s = sp;
@@ -291,18 +297,40 @@ void Annealing<n>::createInitialSolution(vector<int> S)
 }
 
 template <int n>
-vector<int> Annealing<n>::neighbour(vector<int> s)
+pair<vector<int>, double> Annealing<n>::neighbour(double sCost)
 {
-  vector<int> sp = s;
+  vector<int> sp = Annealing<n>::s;
+  double spCost = sCost * Annealing<n>::normalizer;
   int i = Annealing<n>::uid(dre);
   int j;
   do {
     j = Annealing<n>::uid(dre);
   } while(i == j);
-  int tmp = sp[i];
-  sp[i] = sp[j];
-  sp[j] = tmp;
-  return sp;
+
+  if(j < i) {
+    i = i + j;
+    j = i - j;
+    i = i - j;
+  }
+
+  spCost -= Annealing<n>::GC.getWeight(sp[i], sp[i+1]);
+  spCost -= Annealing<n>::GC.getWeight(sp[j-1], sp[j]);
+  spCost += Annealing<n>::GC.getWeight(sp[j], sp[i+1]);
+  spCost += Annealing<n>::GC.getWeight(sp[j-1], sp[i]);
+
+  if(i != 0) {
+    spCost -= Annealing<n>::GC.getWeight(sp[i-1], sp[i]);
+    spCost += Annealing<n>::GC.getWeight(sp[i-1], sp[j]);
+  }
+  if(j != sp.size() - 1) {
+    spCost -= Annealing<n>::GC.getWeight(sp[j], sp[j+1]);
+    spCost += Annealing<n>::GC.getWeight(sp[i], sp[j+1]);
+  }
+
+  sp[i] = sp[i] + sp[j];
+  sp[j] = sp[i] - sp[j];
+  sp[i] = sp[i] - sp[j];
+  return {sp, spCost/Annealing<n>::normalizer};
 }
 
 #endif

@@ -74,7 +74,7 @@ int main()
   // --END PARSE INPUT--
 
   // --SIMULATED ANNEALING--
-    int seed = 2;
+    int seed = 100;
     default_random_engine dre(seed);
     Annealing<n>::dre = dre;
     uniform_int_distribution<int> uid(0, S.size()-1);
