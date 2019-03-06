@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cmath>
 #include <sstream>
+#include <chrono>
 #include <sqlite3.h>
 #include "Graph.h"
 #include "Annealing.h"
@@ -19,6 +20,7 @@ static int callback(void *, int, char**, char**);
 
 int main()
 {
+  auto gstart = chrono::steady_clock::now();
 // NUMBER OF CITIES
   const int n = N;
 
@@ -72,25 +74,33 @@ int main()
       S.push_back(stoi(s)-1);
     }
   // --END PARSE INPUT--
-
   // --SIMULATED ANNEALING--
-    int seed = 100;
-    default_random_engine dre(seed);
-    Annealing<n>::dre = dre;
-    uniform_int_distribution<int> uid(0, S.size()-1);
-    Annealing<n>::uid = uid;
+    for(int i = 132; i < 133; i++) {
+      auto start = chrono::steady_clock::now();
+      int seed = i;
+      default_random_engine dre(seed);
+      Annealing<n>::dre = dre;
+      uniform_int_distribution<int> uid(0, S.size()-1);
+      Annealing<n>::uid = uid;
 
-    Annealing<n>::computeNormalizer(S);
-    Annealing<n>::computeGComplete();
-    Annealing<n>::createInitialSolution(S);
-    double Ti = Annealing<n>::initialTemperature(8, .95);
-    Annealing<n>::thresholdAccepting(Ti);
+      Annealing<n>::computeNormalizer(S);
+      Annealing<n>::computeGComplete();
+      Annealing<n>::createInitialSolution(S);
+      double Ti = Annealing<n>::initialTemperature(8, .95);
+      printf("Seed: %d\n", seed);
+      Annealing<n>::thresholdAccepting(Ti);
+      auto end = chrono::steady_clock::now();
+      printf("Elapsed time: %lld\n", chrono::duration_cast<chrono::seconds>(end - start).count());
+    }
+    // Annealing<n>::computeNormalizer(S);
+    // Annealing<n>::computeGComplete();
     // double res = Annealing<n>::costFunction(S);
     // printf("Evaluation#%d: %2.9f\n\n", ++testcase, res);
     S.clear();
   // --END SIMULATED ANNEALING--
   }
-
+  auto gend = chrono::steady_clock::now();
+  printf("Total elapsed time: %lld\n", chrono::duration_cast<chrono::seconds>(gend - gstart).count());
   return 0;
 }
 

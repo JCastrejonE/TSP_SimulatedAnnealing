@@ -8,8 +8,8 @@
 
 #define BATCH_SIZE 1000
 #define MAX_BATCH_ATTEMPTS BATCH_SIZE * 100
-#define EPSILON 0.05
-#define EPSILONP 0.001
+#define EPSILON 0.0001
+#define EPSILONP 0.0001
 #define PHI 0.95
 
 using namespace std;
@@ -25,6 +25,8 @@ private:
   static double maxD;
 
   static vector<int> s;
+  static vector<int> minS;
+  static double minSCost;
 
   static double naturalD(double, double, double, double);
 
@@ -37,15 +39,15 @@ public:
   static default_random_engine dre;
   static uniform_int_distribution<int> uid;
 
-  static void computeNormalizer(vector<int>);
+  static void computeNormalizer(vector<int>&);
   static void computeGComplete();
   static void validEdge(int, int, double);
   static void addCity(int, pair<double, double>);
-  static double costFunction(vector<int>);
+  static double costFunction(vector<int>&);
 
   static double initialTemperature(double, double);
   static void thresholdAccepting(double);
-  static void createInitialSolution(vector<int>);
+  static void createInitialSolution(vector<int>&);
   static pair<vector<int>, double> neighbour(double);
 };
 
@@ -68,13 +70,19 @@ template <int n>
 vector<int> Annealing<n>::s;
 
 template <int n>
+vector<int> Annealing<n>::minS;
+
+template <int n>
+double Annealing<n>::minSCost = numeric_limits<double>::max();
+
+template <int n>
 default_random_engine Annealing<n>::dre;
 
 template <int n>
 uniform_int_distribution<int> Annealing<n>::uid(1, n);
 
 template <int n>
-double Annealing<n>::costFunction(vector<int> S)
+double Annealing<n>::costFunction(vector<int> &S)
 {
   double sum = 0;
   for (int i = 0; i < S.size() - 1; i++)
@@ -93,7 +101,7 @@ void Annealing<n>::validEdge(int u, int v, double weight)
 }
 
 template <int n>
-void Annealing<n>::computeNormalizer(vector<int> S)
+void Annealing<n>::computeNormalizer(vector<int> &S)
 {
   vector<double> L;
 
@@ -174,23 +182,31 @@ double Annealing<n>::computeBatch(double T)
   int c = 0;
   int i = 0;
   double r = 0.0;
+  double sCost = Annealing<n>::costFunction(Annealing<n>::s);
   while (c < BATCH_SIZE)
   {
-    double sCost = Annealing<n>::costFunction(Annealing<n>::s);
     pair<vector<int>, double> neighbour = Annealing<n>::neighbour(sCost);
-    vector<int> sp = neighbour.first;
+    vector<int> sp;
+    sp.swap(neighbour.first);
     double spCost = neighbour.second;
     if (spCost < sCost + T)
     {
-      Annealing<n>::s = sp;
+      if(spCost < minSCost) {
+        Annealing<n>::minSCost = spCost;
+        Annealing<n>::minS = sp;
+      }
+      sp.swap(Annealing<n>::s);
+      sCost = spCost;
       c += 1;
       r += spCost;
+      i = 0;
+      printf("%2.9f\n", spCost);
     }
-    i += 1;
+    else
+      i += 1;
     if (i >= MAX_BATCH_ATTEMPTS)
       break;
   }
-  printf("%2.9f\n", Annealing<n>::costFunction(Annealing<n>::s));
   double res = (double)r / (double)BATCH_SIZE;
   return res;
 }
@@ -209,10 +225,11 @@ void Annealing<n>::thresholdAccepting(double T)
     }
     T = PHI * T;
   }
-  for(auto i: Annealing<n>::s) {
+  for(auto i: Annealing<n>::minS) {
     printf("%d,", i+1);
   }
   printf("\n");
+  printf("%2.9f\n", minSCost);
 }
 
 template <int n>
@@ -244,7 +261,7 @@ double Annealing<n>::initialTemperature(double T, double P)
     T2 = 2 * T;
   }
   double res = Annealing<n>::binarySearch(T1, T2, P);
-  printf("Ti: %2.9f\n", res);
+  // printf("Ti: %2.9f\n", res);
   return res;
 }
 
@@ -257,19 +274,21 @@ double Annealing<n>::acceptedPercentage(double T)
   {
     double sCost = Annealing<n>::costFunction(Annealing<n>::s);
     pair<vector<int>, double> neighbour = Annealing<n>::neighbour(sCost);
-    vector<int> sp = neighbour.first;
+    vector<int> sp;
+    sp.swap(neighbour.first);
     double spCost = neighbour.second;
     if (spCost <= sCost + T)
     {
       c += 1;
-      Annealing<n>::s = sp;
+      sp.swap(Annealing<n>::s);
+      tries = 0;
     }
-    tries += 1;
+    else
+      tries += 1;
     if (tries >= MAX_BATCH_ATTEMPTS)
       break;
   }
   double res = (double)c / (double)BATCH_SIZE;
-  // printf("Accepted: %d Batchsize: %d P: %2.9f\n", c, BATCH_SIZE, res);
   return res;
 }
 
@@ -277,7 +296,6 @@ template <int n>
 double Annealing<n>::binarySearch(double T1, double T2, double P)
 {
   double Tm = (T1 + T2) / 2;
-  // printf("Binary T1: %2.4f T2: %2.4f Tm: %2.4f P: %2.4f\n", T1, T2, Tm, P);
   if (T2 - T1 < EPSILONP)
     return Tm;
   double p = Annealing<n>::acceptedPercentage(Tm);
@@ -290,7 +308,7 @@ double Annealing<n>::binarySearch(double T1, double T2, double P)
 }
 
 template <int n>
-void Annealing<n>::createInitialSolution(vector<int> S)
+void Annealing<n>::createInitialSolution(vector<int> &S)
 {
   Annealing<n>::s = S;
   shuffle(Annealing<n>::s.begin(), Annealing<n>::s.end(), dre);
@@ -313,10 +331,12 @@ pair<vector<int>, double> Annealing<n>::neighbour(double sCost)
     i = i - j;
   }
 
-  spCost -= Annealing<n>::GC.getWeight(sp[i], sp[i+1]);
-  spCost -= Annealing<n>::GC.getWeight(sp[j-1], sp[j]);
-  spCost += Annealing<n>::GC.getWeight(sp[j], sp[i+1]);
-  spCost += Annealing<n>::GC.getWeight(sp[j-1], sp[i]);
+  if(i != j-1) {
+    spCost -= Annealing<n>::GC.getWeight(sp[i], sp[i+1]);
+    spCost -= Annealing<n>::GC.getWeight(sp[j-1], sp[j]);
+    spCost += Annealing<n>::GC.getWeight(sp[j], sp[i+1]);
+    spCost += Annealing<n>::GC.getWeight(sp[j-1], sp[i]);
+  }
 
   if(i != 0) {
     spCost -= Annealing<n>::GC.getWeight(sp[i-1], sp[i]);
