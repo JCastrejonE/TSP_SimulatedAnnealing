@@ -75,7 +75,7 @@ int main()
     }
   // --END PARSE INPUT--
   // --SIMULATED ANNEALING--
-    for(int i = 132; i < 133; i++) {
+    for(int i = 2; i < 3; i++) {
       auto start = chrono::steady_clock::now();
       int seed = i;
       default_random_engine dre(seed);

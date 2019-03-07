@@ -8,8 +8,8 @@
 
 #define BATCH_SIZE 1000
 #define MAX_BATCH_ATTEMPTS BATCH_SIZE * 100
-#define EPSILON 0.0001
-#define EPSILONP 0.0001
+#define EPSILON 0.005
+#define EPSILONP 0.005
 #define PHI 0.95
 
 using namespace std;
@@ -200,7 +200,7 @@ double Annealing<n>::computeBatch(double T)
       c += 1;
       r += spCost;
       i = 0;
-      printf("%2.9f\n", spCost);
+      //printf("%2.9f\n", spCost);
     }
     else
       i += 1;
