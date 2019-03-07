@@ -9,7 +9,7 @@
 using namespace std;
 
 // DB FILE PATH
-#define DBPATH "db/tsp.db"
+#define DBPATH "../db/tsp.db"
 
 // NUMBER OF CITIES TO READ FROM DB
 #define N 1092
@@ -62,7 +62,7 @@ int main()
 
   string s;
   vector<int> S;
-  int testcase = 0;
+  // int testcase = 0;
 
   // READ TEST CASES FROM STDIN (COMMA SEPARATED).
   while (getline(cin, s))
