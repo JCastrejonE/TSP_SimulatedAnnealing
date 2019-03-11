@@ -3,8 +3,8 @@
 #include <sstream>
 #include <chrono>
 #include <sqlite3.h>
-#include "Graph.h"
-#include "Annealing.h"
+#include "Graph.hpp"
+#include "Annealing.hpp"
 
 using namespace std;
 
@@ -16,15 +16,16 @@ using namespace std;
 
 // GETS EXECUTED FOR EACH ROW OF THE DB QUERY RESULT.
 template <int n>
-static int callback(void *, int, char**, char**);
+static int callback(void *, int, char **, char **);
 
 int main()
 {
   auto gstart = chrono::steady_clock::now();
-// NUMBER OF CITIES
+  // NUMBER OF CITIES
   const int n = N;
+  Annealing annealing(n);
 
-// --DATABASE READ SECTION--
+  // --DATABASE READ SECTION--
   sqlite3 *db;
   char *zErrMsg = 0;
   int rc;
@@ -36,29 +37,21 @@ int main()
     cout << " Can't open database: " << sqlite3_errmsg(db) << endl;
     return 0;
   }
-  // else
-  // {
-  //   cout << "Opened database successfully" << endl;
-  // }
 
   sql = "SELECT * \
         FROM (SELECT * FROM cities LIMIT 1092) A \
         LEFT JOIN (SELECT * FROM connections) B \
         ON A.id=B.id_city_1 AND B.id_city_2<=1092;";
 
-  rc = sqlite3_exec(db, sql, callback<n>, 0, &zErrMsg);
+  rc = sqlite3_exec(db, sql, callback<n>, &annealing, &zErrMsg);
 
   if (rc != SQLITE_OK)
   {
     cout << "SQL error: " << zErrMsg << endl;
     sqlite3_free(zErrMsg);
   }
-  // else
-  // {
-  //   cout << "Operation done successfully" << endl;
-  // }
   sqlite3_close(db);
-// --END DATABASE READ SECTION--
+  // --END DATABASE READ SECTION--
 
   string s;
   vector<int> S;
@@ -67,37 +60,31 @@ int main()
   // READ TEST CASES FROM STDIN (COMMA SEPARATED).
   while (getline(cin, s))
   {
-  // --PARSE INPUT--
+    // --PARSE INPUT--
     stringstream ss;
     ss << s;
-    while(getline(ss, s, ',')) {
-      S.push_back(stoi(s)-1);
+    while (getline(ss, s, ','))
+    {
+      S.push_back(stoi(s) - 1);
     }
-  // --END PARSE INPUT--
-  // --SIMULATED ANNEALING--
-    for(int i = 2; i < 3; i++) {
+    // --END PARSE INPUT--
+    // --SIMULATED ANNEALING--
+    for (int seed = 500; seed < 600; seed++)
+    {
       auto start = chrono::steady_clock::now();
-      int seed = i;
-      default_random_engine dre(seed);
-      Annealing<n>::dre = dre;
-      uniform_int_distribution<int> uid(0, S.size()-1);
-      Annealing<n>::uid = uid;
+      annealing.setRandomEngine(seed, S.size());
+      pair<vector<int>, double> res = annealing.computeSolution(S);
 
-      Annealing<n>::computeNormalizer(S);
-      Annealing<n>::computeGComplete();
-      Annealing<n>::createInitialSolution(S);
-      double Ti = Annealing<n>::initialTemperature(8, .95);
-      printf("Seed: %d\n", seed);
-      Annealing<n>::thresholdAccepting(Ti);
+      printf("\nSeed: %d\n", seed);
+      for(auto i : res.first) {
+        printf("%d, ", i);
+      }
+      printf("\n%2.9f\n", res.second);
       auto end = chrono::steady_clock::now();
       printf("Elapsed time: %lld\n", chrono::duration_cast<chrono::seconds>(end - start).count());
     }
-    // Annealing<n>::computeNormalizer(S);
-    // Annealing<n>::computeGComplete();
-    // double res = Annealing<n>::costFunction(S);
-    // printf("Evaluation#%d: %2.9f\n\n", ++testcase, res);
     S.clear();
-  // --END SIMULATED ANNEALING--
+    // --END SIMULATED ANNEALING--
   }
   auto gend = chrono::steady_clock::now();
   printf("Total elapsed time: %lld\n", chrono::duration_cast<chrono::seconds>(gend - gstart).count());
@@ -105,10 +92,11 @@ int main()
 }
 
 template <int n>
-static int callback(void *z, int argc, char **argv, char **azColName)
+static int callback(void *annealing, int argc, char **argv, char **azColName)
 {
+  Annealing *a = static_cast<Annealing *>(annealing);
   if (argv[7] != NULL)
-    Annealing<n>::validEdge(stoi(argv[0]) - 1, stoi(argv[7]) - 1, stod(argv[8]));
-  Annealing<n>::addCity(stoi(argv[0]) - 1, {stod(argv[4]), stod(argv[5])});
+    a->validEdge(stoi(argv[0]) - 1, stoi(argv[7]) - 1, stod(argv[8]));
+  a->addCity(stoi(argv[0]) - 1, {stod(argv[4]), stod(argv[5])});
   return 0;
 }

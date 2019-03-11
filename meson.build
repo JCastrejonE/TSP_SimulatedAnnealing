@@ -6,8 +6,10 @@ incdir = include_directories('include')
 
 sqlite3 = dependency('sqlite3')
 
+src = ['src/Annealing.cpp', 'src/Graph.cpp', 'src/Main.cpp']
+
 executable(
   'TCP_SimmulatedAnnealing',
-  'src/main.cpp',
+  src,
   include_directories : incdir,
   dependencies : sqlite3)
