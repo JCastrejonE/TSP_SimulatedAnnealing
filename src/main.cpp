@@ -15,7 +15,6 @@ using namespace std;
 #define N 1092
 
 // GETS EXECUTED FOR EACH ROW OF THE DB QUERY RESULT.
-template <int n>
 static int callback(void *, int, char **, char **);
 
 int main()
@@ -30,7 +29,7 @@ int main()
   char *zErrMsg = 0;
   int rc;
   rc = sqlite3_open(DBPATH, &db);
-  char const *sql;
+  char sql[200];
 
   if (rc)
   {
@@ -38,12 +37,12 @@ int main()
     return 0;
   }
 
-  sql = "SELECT * \
-        FROM (SELECT * FROM cities LIMIT 1092) A \
+  sprintf(sql, "SELECT * \
+        FROM (SELECT * FROM cities LIMIT %d) A \
         LEFT JOIN (SELECT * FROM connections) B \
-        ON A.id=B.id_city_1 AND B.id_city_2<=1092;";
+        ON A.id=B.id_city_1 AND B.id_city_2<=%d;", n, n);
 
-  rc = sqlite3_exec(db, sql, callback<n>, &annealing, &zErrMsg);
+  rc = sqlite3_exec(db, sql, callback, &annealing, &zErrMsg);
 
   if (rc != SQLITE_OK)
   {
@@ -91,7 +90,6 @@ int main()
   return 0;
 }
 
-template <int n>
 static int callback(void *annealing, int argc, char **argv, char **azColName)
 {
   Annealing *a = static_cast<Annealing *>(annealing);
