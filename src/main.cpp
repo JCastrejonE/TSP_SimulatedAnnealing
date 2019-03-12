@@ -40,7 +40,8 @@ int main()
   sprintf(sql, "SELECT * \
         FROM (SELECT * FROM cities LIMIT %d) A \
         LEFT JOIN (SELECT * FROM connections) B \
-        ON A.id=B.id_city_1 AND B.id_city_2<=%d;", n, n);
+        ON A.id=B.id_city_1 AND B.id_city_2<=%d;",
+          n, n);
 
   rc = sqlite3_exec(db, sql, callback, &annealing, &zErrMsg);
 
@@ -72,13 +73,14 @@ int main()
     {
       auto start = chrono::steady_clock::now();
       annealing.setRandomEngine(seed, S.size());
-      pair<vector<int>, double> res = annealing.computeSolution(S);
+      pair<vector<int>, double> res = annealing.computeSolution(S, true);
 
       printf("\nSeed: %d\n", seed);
-      for(auto i : res.first) {
+      for (auto i : res.first)
+      {
         printf("%d, ", i);
       }
-      printf("\n%2.9f\n", res.second);
+      printf("\nEvaluation: %2.9f\n", res.second);
       auto end = chrono::steady_clock::now();
       printf("Elapsed time: %lld\n", chrono::duration_cast<chrono::seconds>(end - start).count());
     }

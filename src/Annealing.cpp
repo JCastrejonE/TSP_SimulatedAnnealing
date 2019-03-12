@@ -14,7 +14,7 @@ Annealing::Annealing(int size)
   this->cities = new pair<double, double>[size];
 }
 
-pair<vector<int>, double> Annealing::computeSolution(vector<int> &S)
+pair<vector<int>, double> Annealing::computeSolution(vector<int> &S, bool sweep)
 {
   this->normalizer = 0;
   this->maxD = 0;
@@ -25,7 +25,56 @@ pair<vector<int>, double> Annealing::computeSolution(vector<int> &S)
   this->createInitialSolution(S);
   double Ti = this->initialTemperature(8, .95);
   this->thresholdAccepting(Ti);
+  if (sweep)
+  {
+    this->computeSweep();
+  }
   return {minS, minSCost};
+}
+
+void Annealing::computeSweep()
+{
+  double minCost = this->minSCost * this->normalizer;
+  double actualCost = minCost;
+  bool improved = true;
+
+  while (improved)
+  {
+    improved = false;
+    this->s = this->minS;
+    for (int i = 0; i < this->s.size(); i++)
+    {
+      for (int j = i + 1; j < this->s.size(); j++)
+      {
+        if (i != j - 1)
+        {
+          actualCost -= this->GC.getWeight(this->s[i], this->s[i + 1]);
+          actualCost -= this->GC.getWeight(this->s[j - 1], this->s[j]);
+          actualCost += this->GC.getWeight(this->s[j], this->s[i + 1]);
+          actualCost += this->GC.getWeight(this->s[j - 1], this->s[i]);
+        }
+        if (i != 0)
+        {
+          actualCost -= this->GC.getWeight(this->s[i - 1], this->s[i]);
+          actualCost += this->GC.getWeight(this->s[i - 1], this->s[j]);
+        }
+        if (j != this->s.size() - 1)
+        {
+          actualCost -= this->GC.getWeight(this->s[j], this->s[j + 1]);
+          actualCost += this->GC.getWeight(this->s[i], this->s[j + 1]);
+        }
+        this->s[i] = this->s[i] + this->s[j];
+        this->s[j] = this->s[i] - this->s[j];
+        this->s[i] = this->s[i] - this->s[j];
+        if(actualCost < minCost) {
+          improved = true;
+          minCost = actualCost;
+          this->minS = this->s;
+        }
+      }
+    }
+  }
+  this->minSCost = minCost / this->normalizer;
 }
 
 double Annealing::costFunction(vector<int> &S)

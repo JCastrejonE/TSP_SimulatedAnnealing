@@ -38,6 +38,7 @@ private:
   double binarySearch(double, double, double);
   void createInitialSolution(vector<int> &);
   pair<vector<int>, double> neighbour(double);
+  void computeSweep();
 
   static double naturalD(double, double, double, double);
 
@@ -46,7 +47,7 @@ public:
   void setRandomEngine(int, int);
   void validEdge(int, int, double);
   void addCity(int, pair<double, double>);
-  pair<vector<int>, double> computeSolution(vector<int> &);
+  pair<vector<int>, double> computeSolution(vector<int> &, bool);
 };
 
 #endif
