@@ -14,7 +14,7 @@ Annealing::Annealing(int size)
   this->cities = new pair<double, double>[size];
 }
 
-pair<vector<int>, double> Annealing::computeSolution(vector<int> &S, bool sweep)
+pair<vector<int>, double> Annealing::computeSolution(vector<int> &S, bool hybrid, bool sweep)
 {
   this->normalizer = 0;
   this->maxD = 0;
@@ -23,13 +23,13 @@ pair<vector<int>, double> Annealing::computeSolution(vector<int> &S, bool sweep)
   this->computeNormalizer(S);
   this->computeGComplete();
   this->createInitialSolution(S);
-  double Ti = this->initialTemperature(8, .95);
-  this->thresholdAccepting(Ti);
+  double Ti = this->initialTemperature(INIT_T, MIN_INIT_ACC_P);
+  this->thresholdAccepting(Ti, hybrid);
   if (sweep)
   {
     this->computeSweep();
   }
-  return {minS, minSCost};
+  return {this->minS, this->minSCost};
 }
 
 void Annealing::computeSweep()
@@ -66,7 +66,8 @@ void Annealing::computeSweep()
         this->s[i] = this->s[i] + this->s[j];
         this->s[j] = this->s[i] - this->s[j];
         this->s[i] = this->s[i] - this->s[j];
-        if(actualCost < minCost) {
+        if (actualCost < minCost)
+        {
           improved = true;
           minCost = actualCost;
           this->minS = this->s;
@@ -161,7 +162,7 @@ void Annealing::addCity(int i, pair<double, double> coords)
   this->cities[i] = coords;
 }
 
-double Annealing::computeBatch(double T)
+double Annealing::computeBatch(double T, bool hybrid)
 {
   int c = 0;
   int i = 0;
@@ -173,18 +174,22 @@ double Annealing::computeBatch(double T)
     vector<int> sp;
     sp.swap(neighbour.first);
     double spCost = neighbour.second;
+
+    // Change to sweep to find local min.
+    if (hybrid && spCost < this->minSCost)
+    {
+      this->minSCost = spCost;
+      this->minS = sp;
+      this->computeSweep();
+    }
+
     if (spCost < sCost + T)
     {
-      if (spCost < minSCost)
-      {
-        this->minSCost = spCost;
-        this->minS = sp;
-      }
       sp.swap(this->s);
       sCost = spCost;
       c += 1;
       r += spCost;
-      i = 0;
+      // i = 0; // restart attempts on acceptance
     }
     else
       i += 1;
@@ -195,7 +200,7 @@ double Annealing::computeBatch(double T)
   return res;
 }
 
-void Annealing::thresholdAccepting(double T)
+void Annealing::thresholdAccepting(double T, bool hybrid)
 {
   double p = 0;
   while (T > EPSILON)
@@ -204,7 +209,7 @@ void Annealing::thresholdAccepting(double T)
     while (p <= q)
     {
       q = p;
-      p = this->computeBatch(T);
+      p = this->computeBatch(T, hybrid);
     }
     T = PHI * T;
   }

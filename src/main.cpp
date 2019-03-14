@@ -1,5 +1,4 @@
 #include <iostream>
-#include <cmath>
 #include <sstream>
 #include <chrono>
 #include <sqlite3.h>
@@ -69,16 +68,18 @@ int main()
     }
     // --END PARSE INPUT--
     // --SIMULATED ANNEALING--
-    for (int seed = 500; seed < 600; seed++)
+    for (int seed = 505; seed < 600; seed++)
     {
       auto start = chrono::steady_clock::now();
+      // params: (seed, uniform_int_generator_max)
       annealing.setRandomEngine(seed, S.size());
-      pair<vector<int>, double> res = annealing.computeSolution(S, true);
+      // params: (initial_instance, hybrid_sweep?, final_sweep?)
+      pair<vector<int>, double> res = annealing.computeSolution(S, true, true);
 
       printf("\nSeed: %d\n", seed);
       for (auto i : res.first)
       {
-        printf("%d, ", i);
+        printf("%d, ", i+1);
       }
       printf("\nEvaluation: %2.9f\n", res.second);
       auto end = chrono::steady_clock::now();
