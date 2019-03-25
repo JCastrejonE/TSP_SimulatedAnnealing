@@ -7,11 +7,11 @@
 
 using namespace std;
 
-#define BATCH_SIZE 3000
+#define BATCH_SIZE 1000
 #define MAX_BATCH_ATTEMPTS BATCH_SIZE * 10
 #define EPSILON 0.05
 #define EPSILONP 0.05
-#define PHI 0.95
+#define PHI 0.96
 #define INIT_T 8
 #define MIN_INIT_ACC_P .95
 

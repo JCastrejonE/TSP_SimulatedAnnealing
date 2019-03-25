@@ -34,18 +34,21 @@ pair<vector<int>, double> Annealing::computeSolution(vector<int> &S, bool hybrid
 
 void Annealing::computeSweep()
 {
-  double minCost = this->minSCost * this->normalizer;
-  double actualCost = minCost;
   bool improved = true;
+  double minCost = this->minSCost * this->normalizer;
+  double originalCost;
+  double actualCost;
 
   while (improved)
   {
     improved = false;
     this->s = this->minS;
+    originalCost = minCost;
     for (int i = 0; i < this->s.size(); i++)
     {
       for (int j = i + 1; j < this->s.size(); j++)
       {
+        actualCost = originalCost;
         if (i != j - 1)
         {
           actualCost -= this->GC.getWeight(this->s[i], this->s[i + 1]);
@@ -63,14 +66,18 @@ void Annealing::computeSweep()
           actualCost -= this->GC.getWeight(this->s[j], this->s[j + 1]);
           actualCost += this->GC.getWeight(this->s[i], this->s[j + 1]);
         }
-        this->s[i] = this->s[i] + this->s[j];
-        this->s[j] = this->s[i] - this->s[j];
-        this->s[i] = this->s[i] - this->s[j];
         if (actualCost < minCost)
         {
+          this->s[i] = this->s[i] + this->s[j];
+          this->s[j] = this->s[i] - this->s[j];
+          this->s[i] = this->s[i] - this->s[j];
           improved = true;
           minCost = actualCost;
           this->minS = this->s;
+
+          this->s[i] = this->s[i] + this->s[j];
+          this->s[j] = this->s[i] - this->s[j];
+          this->s[i] = this->s[i] - this->s[j];
         }
       }
     }
@@ -175,16 +182,26 @@ double Annealing::computeBatch(double T, bool hybrid)
     sp.swap(neighbour.first);
     double spCost = neighbour.second;
 
-    // Change to sweep to find local min.
+    // Use to sweep to find local min.
     if (hybrid && spCost < this->minSCost)
     {
+      sp.swap(this->minS);
       this->minSCost = spCost;
-      this->minS = sp;
       this->computeSweep();
+
+      this->s = this->minS;
+      sCost = this->minSCost;
+      c += 1;
+      r += sCost;
+      continue;
     }
 
     if (spCost < sCost + T)
     {
+      if(spCost < this->minSCost) {
+        this->minS = sp;
+        this->minSCost = spCost;
+      }
       sp.swap(this->s);
       sCost = spCost;
       c += 1;
