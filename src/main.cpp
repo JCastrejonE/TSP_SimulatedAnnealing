@@ -1,7 +1,9 @@
 #include <iostream>
 #include <sstream>
 #include <chrono>
+#include <fstream>
 #include <sqlite3.h>
+#include "jarro2783/cxxopts.hpp"
 #include "Graph.hpp"
 #include "Annealing.hpp"
 
@@ -16,9 +18,59 @@ using namespace std;
 // GETS EXECUTED FOR EACH ROW OF THE DB QUERY RESULT.
 static int callback(void *, int, char **, char **);
 
-int main()
+int main(int argc, char** argv)
 {
   auto gstart = chrono::steady_clock::now();
+  int sseed=0, eseed=10;
+  istream *is = &cin;
+  ifstream inFile;
+  bool hybrid=false, sweep=true;
+
+  cxxopts::Options options(argv[0], "TSP problem solution using simmulated annealing heuristic.");
+  try
+  {
+    options
+      .add_options()
+      ("h, help", "Show help")
+      ("f, file", "Input file to read instance (ignore to read from stdin)", cxxopts::value<string>(), "file")
+      ("s, start", "Start seed to use. Default is 0", cxxopts::value<int>(), "N")
+      ("e, end", "End seed to use. Default is 10", cxxopts::value<int>(), "M")
+      ("use-hybrid", "Use hybrid sweep calculation")
+      ("skip-sweep", "Skip final sweep calculation");
+
+    auto result = options.parse(argc, argv);
+    if (result.count("h"))
+    {
+      cout << options.help() << endl;
+      return 0;
+    }
+    if (result.count("f"))
+    {
+      inFile.open(result["f"].as<string>());
+      is = &inFile;
+    }
+    if (result.count("s"))
+    {
+      sseed = result["s"].as<int>();
+    }
+    if (result.count("e"))
+    {
+      eseed = result["e"].as<int>();
+    }
+    if (result.count("use-hybrid"))
+    {
+      hybrid = true;
+    }
+    if (result.count("final-sweep"))
+    {
+      sweep = false;
+    }
+  } catch (const cxxopts::OptionException& e)
+  {
+    cout << "Error parsing options: " << e.what() << endl;
+    return 1;
+  }
+
   // NUMBER OF CITIES
   const int n = N;
   Annealing annealing(n);
@@ -54,10 +106,9 @@ int main()
 
   string s;
   vector<int> S;
-  // int testcase = 0;
 
-  // READ TEST CASES FROM STDIN (COMMA SEPARATED).
-  while (getline(cin, s))
+  // READ TEST CASES FROM INPUT FILE (COMMA SEPARATED).
+  while (getline(*is, s))
   {
     // --PARSE INPUT--
     stringstream ss;
@@ -68,13 +119,13 @@ int main()
     }
     // --END PARSE INPUT--
     // --SIMULATED ANNEALING--
-    for (int seed = 505; seed < 600; seed++)
+    for (int seed = sseed; seed < eseed; seed++)
     {
       auto start = chrono::steady_clock::now();
       // params: (seed, uniform_int_generator_max)
       annealing.setRandomEngine(seed, S.size());
       // params: (initial_instance, hybrid_sweep?, final_sweep?)
-      pair<vector<int>, double> res = annealing.computeSolution(S, true, true);
+      pair<vector<int>, double> res = annealing.computeSolution(S, hybrid, sweep);
 
       printf("\nSeed: %d\n", seed);
       for (auto i : res.first)
