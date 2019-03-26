@@ -7,11 +7,11 @@
 
 using namespace std;
 
-#define BATCH_SIZE 1000
+#define BATCH_SIZE 3000
 #define MAX_BATCH_ATTEMPTS BATCH_SIZE * 10
-#define EPSILON 0.05
-#define EPSILONP 0.05
-#define PHI 0.96
+#define EPSILON 0.001
+#define EPSILONP 0.0001
+#define PHI 0.95
 #define INIT_T 8
 #define MIN_INIT_ACC_P .95
 
@@ -33,8 +33,8 @@ private:
   double costFunction(vector<int> &);
   void computeNormalizer(vector<int> &);
   void computeGComplete();
-  double computeBatch(double, bool);
-  void thresholdAccepting(double, bool);
+  double computeBatch(double, bool, bool);
+  void thresholdAccepting(double, bool, bool);
   double initialTemperature(double, double);
   double acceptedPercentage(double);
   double binarySearch(double, double, double);
@@ -49,7 +49,7 @@ public:
   void setRandomEngine(int, int);
   void validEdge(int, int, double);
   void addCity(int, pair<double, double>);
-  pair<vector<int>, double> computeSolution(vector<int> &, bool, bool);
+  pair<vector<int>, double> computeSolution(vector<int> &, bool, bool, bool);
 };
 
 #endif

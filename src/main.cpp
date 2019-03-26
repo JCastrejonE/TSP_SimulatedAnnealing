@@ -24,7 +24,7 @@ int main(int argc, char** argv)
   int sseed=0, eseed=10;
   istream *is = &cin;
   ifstream inFile;
-  bool hybrid=false, sweep=true;
+  bool hybrid=false, sweep=true, verbose=false;
 
   cxxopts::Options options(argv[0], "TSP problem solution using simmulated annealing heuristic.");
   try
@@ -35,6 +35,7 @@ int main(int argc, char** argv)
       ("f, file", "Input file to read instance (ignore to read from stdin)", cxxopts::value<string>(), "file")
       ("s, start", "Start seed to use. Default is 0", cxxopts::value<int>(), "N")
       ("e, end", "End seed to use. Default is 10", cxxopts::value<int>(), "M")
+      ("v, verbose", "Verbose accepted solutions")
       ("use-hybrid", "Use hybrid sweep calculation")
       ("skip-sweep", "Skip final sweep calculation");
 
@@ -64,6 +65,10 @@ int main(int argc, char** argv)
     if (result.count("final-sweep"))
     {
       sweep = false;
+    }
+    if (result.count("v"))
+    {
+      verbose = true;
     }
   } catch (const cxxopts::OptionException& e)
   {
@@ -125,7 +130,7 @@ int main(int argc, char** argv)
       // params: (seed, uniform_int_generator_max)
       annealing.setRandomEngine(seed, S.size());
       // params: (initial_instance, hybrid_sweep?, final_sweep?)
-      pair<vector<int>, double> res = annealing.computeSolution(S, hybrid, sweep);
+      pair<vector<int>, double> res = annealing.computeSolution(S, hybrid, sweep, verbose);
 
       printf("\nSeed: %d\n", seed);
       for (auto i : res.first)

@@ -14,7 +14,7 @@ Annealing::Annealing(int size)
   this->cities = new pair<double, double>[size];
 }
 
-pair<vector<int>, double> Annealing::computeSolution(vector<int> &S, bool hybrid, bool sweep)
+pair<vector<int>, double> Annealing::computeSolution(vector<int> &S, bool hybrid, bool sweep, bool verbose)
 {
   this->normalizer = 0;
   this->maxD = 0;
@@ -24,7 +24,7 @@ pair<vector<int>, double> Annealing::computeSolution(vector<int> &S, bool hybrid
   this->computeGComplete();
   this->createInitialSolution(S);
   double Ti = this->initialTemperature(INIT_T, MIN_INIT_ACC_P);
-  this->thresholdAccepting(Ti, hybrid);
+  this->thresholdAccepting(Ti, hybrid, verbose);
   if (sweep)
   {
     this->computeSweep();
@@ -169,7 +169,7 @@ void Annealing::addCity(int i, pair<double, double> coords)
   this->cities[i] = coords;
 }
 
-double Annealing::computeBatch(double T, bool hybrid)
+double Annealing::computeBatch(double T, bool hybrid, bool verbose)
 {
   int c = 0;
   int i = 0;
@@ -185,6 +185,10 @@ double Annealing::computeBatch(double T, bool hybrid)
     // Use to sweep to find local min.
     if (hybrid && spCost < this->minSCost)
     {
+      if(verbose)
+      {
+        printf("%2.9f\n", spCost);
+      }
       sp.swap(this->minS);
       this->minSCost = spCost;
       this->computeSweep();
@@ -198,6 +202,10 @@ double Annealing::computeBatch(double T, bool hybrid)
 
     if (spCost < sCost + T)
     {
+      if(verbose)
+      {
+        printf("%2.9f\n", spCost);
+      }
       if(spCost < this->minSCost) {
         this->minS = sp;
         this->minSCost = spCost;
@@ -217,7 +225,7 @@ double Annealing::computeBatch(double T, bool hybrid)
   return res;
 }
 
-void Annealing::thresholdAccepting(double T, bool hybrid)
+void Annealing::thresholdAccepting(double T, bool hybrid, bool verbose)
 {
   double p = 0;
   while (T > EPSILON)
@@ -226,7 +234,7 @@ void Annealing::thresholdAccepting(double T, bool hybrid)
     while (p <= q)
     {
       q = p;
-      p = this->computeBatch(T, hybrid);
+      p = this->computeBatch(T, hybrid, verbose);
     }
     T = PHI * T;
   }
