@@ -19,6 +19,7 @@ class Annealing
 {
 private:
   int n;
+  int accepted;
   Graph G;
   Graph GC;
   pair<double, double> *cities;
@@ -33,8 +34,8 @@ private:
   double costFunction(vector<int> &);
   void computeNormalizer(vector<int> &);
   void computeGComplete();
-  double computeBatch(double, bool, bool);
-  void thresholdAccepting(double, bool, bool);
+  double computeBatch(double, bool *, FILE *);
+  void thresholdAccepting(double, bool *, FILE *);
   double initialTemperature(double, double);
   double acceptedPercentage(double);
   double binarySearch(double, double, double);
@@ -49,7 +50,7 @@ public:
   void setRandomEngine(int, int);
   void validEdge(int, int, double);
   void addCity(int, pair<double, double>);
-  pair<vector<int>, double> computeSolution(vector<int> &, bool, bool, bool);
+  pair<vector<int>, double> computeSolution(vector<int> &, bool *, FILE *);
 };
 
 #endif

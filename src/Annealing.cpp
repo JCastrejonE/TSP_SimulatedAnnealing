@@ -1,6 +1,9 @@
+#define _USE_MATH_DEFINES
+
 #include <iostream>
 #include <vector>
 #include <random>
+#include <algorithm>
 #include "Annealing.hpp"
 #include "Graph.hpp"
 
@@ -14,8 +17,9 @@ Annealing::Annealing(int size)
   this->cities = new pair<double, double>[size];
 }
 
-pair<vector<int>, double> Annealing::computeSolution(vector<int> &S, bool hybrid, bool sweep, bool verbose)
+pair<vector<int>, double> Annealing::computeSolution(vector<int> &S, bool *args, FILE *plotFile)
 {
+  this->accepted = 0;
   this->normalizer = 0;
   this->maxD = 0;
   this->minSCost = numeric_limits<double>::max();
@@ -24,8 +28,8 @@ pair<vector<int>, double> Annealing::computeSolution(vector<int> &S, bool hybrid
   this->computeGComplete();
   this->createInitialSolution(S);
   double Ti = this->initialTemperature(INIT_T, MIN_INIT_ACC_P);
-  this->thresholdAccepting(Ti, hybrid, verbose);
-  if (sweep)
+  this->thresholdAccepting(Ti, args, plotFile);
+  if (args[1]) // sweep
   {
     this->computeSweep();
   }
@@ -169,7 +173,7 @@ void Annealing::addCity(int i, pair<double, double> coords)
   this->cities[i] = coords;
 }
 
-double Annealing::computeBatch(double T, bool hybrid, bool verbose)
+double Annealing::computeBatch(double T, bool *args, FILE *plotFile)
 {
   int c = 0;
   int i = 0;
@@ -183,11 +187,12 @@ double Annealing::computeBatch(double T, bool hybrid, bool verbose)
     double spCost = neighbour.second;
 
     // Use to sweep to find local min.
-    if (hybrid && spCost < this->minSCost)
+    if (args[0] && spCost < this->minSCost) // hybrid
     {
-      if(verbose)
+      if(args[2]) // plot
       {
-        printf("%2.9f\n", spCost);
+        accepted++;
+        fprintf(plotFile, "%d %2.9f\n", accepted, spCost);
       }
       sp.swap(this->minS);
       this->minSCost = spCost;
@@ -202,9 +207,10 @@ double Annealing::computeBatch(double T, bool hybrid, bool verbose)
 
     if (spCost < sCost + T)
     {
-      if(verbose)
+      if(args[2]) // plot
       {
-        printf("%2.9f\n", spCost);
+        accepted++;
+        fprintf(plotFile, "%d %2.9f\n", accepted, spCost);
       }
       if(spCost < this->minSCost) {
         this->minS = sp;
@@ -225,7 +231,7 @@ double Annealing::computeBatch(double T, bool hybrid, bool verbose)
   return res;
 }
 
-void Annealing::thresholdAccepting(double T, bool hybrid, bool verbose)
+void Annealing::thresholdAccepting(double T, bool *args, FILE *plotFile)
 {
   double p = 0;
   while (T > EPSILON)
@@ -234,7 +240,7 @@ void Annealing::thresholdAccepting(double T, bool hybrid, bool verbose)
     while (p <= q)
     {
       q = p;
-      p = this->computeBatch(T, hybrid, verbose);
+      p = this->computeBatch(T, args, plotFile);
     }
     T = PHI * T;
   }

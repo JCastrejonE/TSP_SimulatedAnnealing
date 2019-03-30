@@ -24,7 +24,9 @@ int main(int argc, char** argv)
   int sseed=0, eseed=10;
   istream *is = &cin;
   ifstream inFile;
-  bool hybrid=false, sweep=true, verbose=false;
+  FILE *plotFile;
+  bool args[3] = {false}; // 0: hybrid, 1: sweep, 2: plot
+  args[1] = true;
 
   cxxopts::Options options(argv[0], "TSP problem solution using simmulated annealing heuristic.");
   try
@@ -32,10 +34,10 @@ int main(int argc, char** argv)
     options
       .add_options()
       ("h, help", "Show help")
-      ("f, file", "Input file to read instance (ignore to read from stdin)", cxxopts::value<string>(), "file")
+      ("f, file", "Input file to read instance (ignore to read from stdin)", cxxopts::value<string>(), "input_file")
       ("s, start", "Start seed to use. Default is 0", cxxopts::value<int>(), "N")
       ("e, end", "End seed to use. Default is 10", cxxopts::value<int>(), "M")
-      ("v, verbose", "Verbose accepted solutions")
+      ("p, plot", "Create gnuplot script", cxxopts::value<string>(), "output_file")
       ("use-hybrid", "Use hybrid sweep calculation")
       ("skip-sweep", "Skip final sweep calculation");
 
@@ -58,17 +60,26 @@ int main(int argc, char** argv)
     {
       eseed = result["e"].as<int>();
     }
+    if (result.count("p"))
+    {
+      plotFile = fopen(result["p"].as<string>().c_str(), "w");
+
+      // INITIALIZE PLOT FILE
+      fprintf(plotFile, "set title \"Accepted solutions\"\n");
+      fprintf(plotFile, "set ylabel \"Evaluation\"\n");
+      fprintf(plotFile, "set xlabel \"#\"\n");
+      fprintf(plotFile, "set grid\n");
+      fprintf(plotFile, "plot '-' using 1:2 every 500 with lines\n");
+
+      args[2] = true;
+    }
     if (result.count("use-hybrid"))
     {
-      hybrid = true;
+      args[0] = true;
     }
     if (result.count("final-sweep"))
     {
-      sweep = false;
-    }
-    if (result.count("v"))
-    {
-      verbose = true;
+      args[1] = false;
     }
   } catch (const cxxopts::OptionException& e)
   {
@@ -124,13 +135,13 @@ int main(int argc, char** argv)
     }
     // --END PARSE INPUT--
     // --SIMULATED ANNEALING--
-    for (int seed = sseed; seed < eseed; seed++)
+    for (int seed = sseed; seed <= eseed; seed++)
     {
       auto start = chrono::steady_clock::now();
       // params: (seed, uniform_int_generator_max)
       annealing.setRandomEngine(seed, S.size());
       // params: (initial_instance, hybrid_sweep?, final_sweep?)
-      pair<vector<int>, double> res = annealing.computeSolution(S, hybrid, sweep, verbose);
+      pair<vector<int>, double> res = annealing.computeSolution(S, args, plotFile);
 
       printf("\nSeed: %d\n", seed);
       for (auto i : res.first)
@@ -144,6 +155,9 @@ int main(int argc, char** argv)
     S.clear();
     // --END SIMULATED ANNEALING--
   }
+  fprintf(plotFile, "EOF\n");
+  fprintf(plotFile, "pause -1 \"Hit return key to continue\"\n");
+  fclose(plotFile);
   auto gend = chrono::steady_clock::now();
   printf("Total elapsed time: %lld\n", chrono::duration_cast<chrono::seconds>(gend - gstart).count());
   return 0;
