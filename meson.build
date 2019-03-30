@@ -1,6 +1,6 @@
 project(
   'TSP_SimmulatedAnnealing',
-  'cpp', default_options : ['cpp_std=c++11'])
+  'cpp', default_options : ['cpp_std=c++11', 'buildtype=release'])
 
 incdir = include_directories('include')
 
