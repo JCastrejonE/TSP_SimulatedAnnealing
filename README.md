@@ -1,6 +1,8 @@
 ## About
 This project forms part of Heuristic combinatorial optimization course that forms part of Computer Science degree at **Facultad de Ciencias, Universidad Nacional Autónoma de México**. It tries to find a solution to Traveling salesman problem using simmulated annealing algorithm with some few variants.
 
+For further understanding you can refer to the [PDF document in spanish](tex/Recocido_Simulado.pdf).
+
 ## Building and running
 
 [Meson build system](https://mesonbuild.com/index.html) is used to compile this project. Running:
@@ -33,9 +35,5 @@ This option generates a [gnuplot](http://gnuplot.sourceforge.net) script that sh
 ## Available tune options
 The simmulated annealing heuristic can be tuned to experiment different results.
 The header file [include/Annealing.hpp](include/Annealing.hpp) contains the constants that can be modified.
-
-## TODO
-* Academic document explaining the problem and heuristic.
-* Show solution route on a map.
 
 Credits to [jarro2783](https://github.com/jarro2783/) for his [cxxopts](https://github.com/jarro2783/cxxopts) library to parse command line options.
